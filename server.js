@@ -168,12 +168,28 @@ function handler(socket, type) {
 	}
 }
 
+function ticketEvent(socket, type){
+	return function(payload, callback){
+		callback = typeof(callback) == 'function' ? callback : noop;
+
+		var locked = true;
+		if(type === 'TICKET_EDIT_END'){
+			locked = false;
+		}
+
+		socket.in(payload.board).emit('board:event', {'type': type, 'board': {'id': payload.board}, 'ticket': {id:payload.ticket, locked: locked }});
+		return callback();
+	}
+}
+
 /**
  * Setup listeners for a connected client.
  */
 io.sockets.on('connection', function(socket) {
 	socket.on('board:join',  handler(socket, 'join'));
 	socket.on('board:leave', handler(socket, 'leave'));
+	socket.on('ticket:edit:start', ticketEvent(socket, 'TICKET_EDIT_START'));
+	socket.on('ticket:edit:end', ticketEvent(socket, 'TICKET_EDIT_END'));
 });
 
 module.exports = io;
